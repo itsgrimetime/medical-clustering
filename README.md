@@ -24,8 +24,14 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 
 ![SURF][surf]
 
-- Difference of Gaussians (`blob_dog()`)
+- Difference of Gaussians (`blob_dog()`):
+
+![Difference of Gaussians][blob_dog]
+
 - Laplacian of Gaussians (`blob_log()`)
+
+![Laplacian of Gaussians][blob_log]
+
 - Other `blob_*()` methods
 - Edge histogram
 
@@ -44,3 +50,8 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 [shi-tomasi-corn]: https://github.com/magrimes/medical-clustering/blob/master/examples/shi-tomasi-corners.jpeg
 [sift]: https://github.com/magrimes/medical-clustering/blob/master/examples/sift_keypoints.jpg
 [surf]: https://github.com/magrimes/medical-clustering/blob/master/examples/surf-keypoints.jpg
+[blob_dog]: https://github.com/magrimes/medical-clustering/blob/master/examples/dog.jpeg
+[blob_log]: https://github.com/magrimes/medical-clustering/blob/master/examples/log.jpeg
+
+### Extra
+- Possibly use K-Means to see if we can't cluster further, and get some other groupings.
