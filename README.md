@@ -22,7 +22,7 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 
 - SURF
 
-[SURF][surf]
+![SURF][surf]
 
 - Difference of Gaussians (`blob_dog()`)
 - Laplacian of Gaussians (`blob_log()`)
