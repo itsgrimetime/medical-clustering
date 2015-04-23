@@ -35,6 +35,6 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 ### Todo
 - [ ] Add images to README for examples of what different feature selection methods do
 
-[shi-tomasi-corn]: https://raw.githubusercontent.com/magrimes/medical-clustering/master/examples/shi-tomasi-corners.jpeg
+[shi-tomasi-corn]: https://github.com/magrimes/medical-clustering/blob/master/examples/shi-tomasi-corners.jpeg 
 [sift]: https://raw.githubusercontent.com/magrimes/medical-clustering/master/examples/sift_keypoints.jpg
 [surf]:
