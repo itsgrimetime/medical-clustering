@@ -6,25 +6,28 @@ Grouping of digital x-ray images into four clusters: head-neck, upper-limb, body
 Further sub-clustering of initial groups into more specific sub-groups (such as specific bones)
 should be kept as a secondary goal.
 
-## Data
+## Description of Data
 
 500 Digital x-rays, collected over a year, categorized by their general anatomical location:
 head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 1600x1600 - 1600x3500.
 
-### Proposed feature extraction method(s)
-- shapes
-- vectors that describe lengths of bone structures
-	- relative to other bones in picture
-	- or just absolute in picture
-- maybe other ones if I think of them
-- get blobs using skimage.feature (blob_dog, other blob_* functions)
-- figure out a way to maybe get edges
-- figure out a way to get vectors that describe the image
+### Feature selection/extraction methods
+- Shi-Tomasi Corner Detector (GoodFeaturesToDetect)
+- SURF
+- SIFT
+- Difference of Gaussians (`blob_dog()`)
+- Laplacian of Gaussians (`blob_log()`)
+- Other `blob_*()` methods
+- Edge histogram
 
 ### Proposed training model(s)
-- look at other papers that have done similar things and maybe try to add something new
-- who knows maybe kNN??????????
+- kNN
+- Kernelized SVM or Logistic Regression
 
-### Preprocessing
-can probably get away with scaling images down a lot
+### Preprocessing Checkpoints
+- [ ] Scale all images by certain factor
+- [ ] Remove all white text boxes in images
+- [ ] Crop all images to ensure only black background
 
+### Todo
+- [ ] Add images to README for examples of what different feature selection methods do
