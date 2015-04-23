@@ -12,9 +12,12 @@ should be kept as a secondary goal.
 head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 1600x1600 - 1600x3500.
 
 ### Feature selection/extraction methods
-- Shi-Tomasi Corner Detector (GoodFeaturesToDetect)
-- SURF
+- Shi-Tomasi Corner Detector (GoodFeaturesToDetect) (25 corners):
+![Shi-Tomasi Corner Detection][shi-tomasi-corn]
 - SIFT
+![SIFT][sift]
+- SURF
+![SURF][surf]
 - Difference of Gaussians (`blob_dog()`)
 - Laplacian of Gaussians (`blob_log()`)
 - Other `blob_*()` methods
@@ -31,3 +34,7 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 
 ### Todo
 - [ ] Add images to README for examples of what different feature selection methods do
+
+[shi-tomasi-corn]: https://raw.githubusercontent.com/magrimes/medical-clustering/master/examples/shi-tomasi-corners.jpeg
+[sift]: https://raw.githubusercontent.com/magrimes/medical-clustering/master/examples/sift_keypoints.jpg
+[surf]:
