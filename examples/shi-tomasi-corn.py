@@ -16,4 +16,4 @@ for i in corners:
     x,y = i.ravel()
     cv2.circle(img, (x, y), 8, 255, -1)
 
-cv2.imwrite('shi-tomasi-corners.jpeg', img)
+cv2.imwrite('shi-tomasi-corners.jpeg', cv2.resize(img, (0, 0), fx=0.25, fy=0.25))

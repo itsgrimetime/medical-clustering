@@ -17,7 +17,7 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 - SIFT
 ![SIFT][sift]
 - SURF
-![SURF][surf]
+<!---![SURF][surf]-->
 - Difference of Gaussians (`blob_dog()`)
 - Laplacian of Gaussians (`blob_log()`)
 - Other `blob_*()` methods
@@ -35,6 +35,6 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 ### Todo
 - [ ] Add images to README for examples of what different feature selection methods do
 
-[shi-tomasi-corn]: https://github.com/magrimes/medical-clustering/blob/master/examples/shi-tomasi-corners.jpeg 
-[sift]: https://raw.githubusercontent.com/magrimes/medical-clustering/master/examples/sift_keypoints.jpg
+[shi-tomasi-corn]: https://github.com/magrimes/medical-clustering/blob/master/examples/shi-tomasi-corners.jpeg
+[sift]: https://github.com/magrimes/medical-clustering/blob/master/examples/sift_keypoints.jpg
 [surf]:
