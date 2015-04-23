@@ -12,4 +12,4 @@ kp, des = sift.detectAndCompute(gray, None)
 
 img = cv2.drawKeypoints(gray, sorted(kp, key=attrgetter('size'))[::-1][0:50], flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-cv2.imwrite('sift_keypoints.jpg', cv2.resize(img, (0, 0), fx=0.25, fy=0.25))
+cv2.imwrite('sift_keypoints.jpg', cv2.resize(img, (0, 0), fx=0.5, fy=0.5))

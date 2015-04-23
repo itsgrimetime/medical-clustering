@@ -14,7 +14,7 @@ head-neck, upper-limb, body, and lower-limb. Pictures vary in resolution from 16
 ### Feature selection/extraction methods
 - Shi-Tomasi Corner Detector (GoodFeaturesToDetect) (25 corners):
 ![Shi-Tomasi Corner Detection][shi-tomasi-corn]
-- SIFT
+- SIFT (50 largest keypoints):
 ![SIFT][sift]
 - SURF
 <!---![SURF][surf]-->
