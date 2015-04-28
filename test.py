@@ -21,8 +21,6 @@ for folder in folders:
     if isdir('./' + data_dir + folder):
 	print folder
 	for image_file in listdir('./' + data_dir + folder):
-	    if i > 10:
-		break
 	    if image_file.split('.')[-1] == 'jpeg':
 		print "\t" + image_file
 		full_path = './' + data_dir + folder + '/' + image_file
