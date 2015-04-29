@@ -21,6 +21,7 @@ def get_folds(data, labels, k=7, shuffle=False):
 
     if len(data) != len(labels):
 	print "Error: must have same number of data points and labels"
+	yield None
     fold_size = len(data) / fold
 
     if shuffle:
@@ -51,21 +52,60 @@ def get_filenames(directory):
 	    yield (full_path, classes[data_dir + fldr])
 
 def get_buckets(data, tup=False, pct=0.75, shuffle=False, kmeans=100):
-    if pct < 1 or pct > 100:
-	print "Error: pct must be between 1 and 100"
+    if pct <= 0 or pct > 1.0:
+	print "Error: pct must be on interval (0, 1]"
+	return None
     if kmeans < 2:
 	print "Error: kmeans must be grearter than 1"
+	return None
     index = range(len(data))
-    shuffle(index)
+    if shuffle: random.shuffle(index)
     desc = np.empty((0, 128), dtype=np.float32)
-    if tup:
-	desc = desc.vstack((desc, [data[i][0] for i in index[:(len(data) * pct)]]))
-    else:
-	dest = desc.vstack((desc, [data[i] for i in index[:(len(data) * pct)]]))
+    cut = int(round(len(data) * pct))
+    for i in index[:cut]:
+	if tup:
+	    desc = np.vstack((desc, data[i][0]))
+	else:
+	    desc = np.vstack((desc, data[i]))
 
     temp, classified_points, means = cv2.kmeans(desc, K=kmeans, bestLabels=None,
 	    criteria=crit, attempts=1, flags=cv2.KMEANS_RANDOM_CENTERS)
     return means
+
+def load_data(filename):
+    try:
+	data = np.load(filename)
+	print "Loaded {} items from {}".format(len(data), filename)
+    except IOError:
+	print "Unable to load data from {}".format(filename)
+	data = []
+    return data
+
+def get_histograms(data, means):
+    data_hists = load_data(hist_save_file)
+    if len(data_hists) == 0:
+	print "Building histograms"
+	spinner = ['\\', '|', '/', '-']
+	spincount = 0
+	for i, item in enumerate(data): # (img, label, SIFT descriptors) triple
+	    hist = np.zeros((means.shape[1], 0))
+	    for desc in item[0]: # for each descriptor set each descriptor has 128 values)
+
+		status_string = "{} ({})".format(spinner[spincount % len(spinner)], i)
+		sys.stdout.write(status_string)
+		sys.stdout.flush()
+		sys.stdout.write('\b' * len(status_string))
+
+		dists = []
+		for mindex, mean in enumerate(means):
+		    dists.append((mindex, np.linalg.norm(mean - desc)))
+		dists = sorted(dists, key=lambda entry: entry[1])
+		hist[dists[0][0]] += 1
+		spincount += 1
+	    data_hists.append(hist)
+	np.save(hist_save_file, data_hists)
+    return data_hists
+
 
 toolbar_width = 80
 kmeans = 100
@@ -74,25 +114,14 @@ sift = cv2.SIFT()
 svm = cv2.SVM()
 save_file = 'sift_save.npy'
 data_save_file = 'data' + save_file
+means_save_file = 'means' + save_file
+hist_save_file = 'hist' + save_file
 crit = (cv2.TERM_CRITERIA_EPS, 30, 0.1)
 
-# setup toolbar
-"""
-sys.stdout.write("[%s]" % (" " * toolbar_width))
-sys.stdout.flush()
-sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
-"""
-
-loaded_data = False
-try:
-    data = np.load(data_save_file)
-    print "Loaded descriptors from {}".format(data_save_file)
-    loaded_data = True
-except IOError:
-    print "Unable to load data from {}".format(data_save_file)
-    data = []
-
-if not loaded_data:
+# TODO you can refactor load_data to take a function to run when
+# the data can't be loaded. Same with means down there
+data = load_data(data_save_file)
+if len(data) == 0:
     for filename, label in get_filenames(data_dir):
 	print "filename: {}, label: {}".format(filename, label)
 	img = cv2.imread(filename)
@@ -101,28 +130,22 @@ if not loaded_data:
     np.save(data_save_file, data)
 
 # temp, classified_points, means = cv2.kmeans(np.asarray(all_descriptors), K=2, bestLabels=None, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER, 1, kmeans), attempts=1, flags=cv2.KMEANS_RANDOM_CENTERS)
-
 # def get_buckets(data, tup=False, pct=0.75, shuffle=False, kmeans=100):
-
 # get our defining "bucket of words"
 
-means = get_buckets(data, tup=True, shuffle=True)
+means = load_data(means_save_file)
+if len(means) == 0:
+    print "Calculating bucket of words"
+    means = get_buckets(data, tup=True, shuffle=True)
+    np.save(means_save_file, means)
 
 svm_params = dict(kernel_type = cv2.SVM_RBF,
 	    svm_type = cv2.SVM_C_SVC,
 	    C=1.0, gamma=0.1)
 
+
 labels = [d[1] for d in data]
-data_hists = []
-for item, i in enumerate(data): # (img, label, SIFT descriptors) triple
-    hist = np.zeros((0, len(buckets)))
-    for desc in item[0]: # for each descriptor set each descriptor has 128 values)
-	dists = []
-	for mean, mindex in enumerate(means):
-	    dists.append((mindex, np.linalg.norm(mean - desc)))
-	dists = sorted(dists, key=lambda entry: entry[1])
-	hist[dists[0][0]] += 1
-    data_hists.append(hist)
+data_hists = get_histograms(data, means)
 
 for val_data, val_label, train_data, train_label in get_folds(data_hists, labels):
     for x in train_data:
