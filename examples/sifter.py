@@ -4,6 +4,9 @@ import pdb
 import matplotlib.pyplot as plt
 import random
 import operator
+from sklearn import svm
+
+import pylab as pl
 
 from os import listdir
 from os.path import isdir
@@ -17,12 +20,11 @@ def get_descriptors(img, sift, gray=False):
     kp, des = sift.detectAndCompute(img, None)
     return des
 
-def get_folds(data, labels, k=7, shuffle=False):
-
+def get_folds(data, labels, k=5, shuffle=False):
     if len(data) != len(labels):
 	print "Error: must have same number of data points and labels"
 	yield None
-    fold_size = len(data) / fold
+    fold_size = len(data) / k
 
     if shuffle:
 	shuf_index = range(len(data))
@@ -30,11 +32,11 @@ def get_folds(data, labels, k=7, shuffle=False):
 	data = np.array([data[i] for i in shuf_index])
 	labels = np.array([labels[i] for i in shuf_index])
 
-    for chunk in range(kfold):
-	val_data = array(data[chunk * fold_size : (chunk + 1) * fold_size])
-	val_label = array(labels[chunk * fold_size : (chunk + 1) * fold_size])
-	train_data = concat((data[0 : chunk * fold_size], data[(chunk + 1) * fold_size :]))
-	train_label = concat((labels[0 : chunk * fold_size], labels[(chunk + 1) * fold_size :]))
+    for chunk in range(k):
+	val_data = np.array(data[chunk * fold_size : (chunk + 1) * fold_size])
+	val_label = np.array(labels[chunk * fold_size : (chunk + 1) * fold_size])
+	train_data = np.concatenate((data[0 : chunk * fold_size], data[(chunk + 1) * fold_size :]))
+	train_label = np.concatenate((labels[0 : chunk * fold_size], labels[(chunk + 1) * fold_size :]))
 	yield (val_data, val_label, train_data, train_label)
 
 # TODO get labels matricies too
@@ -88,10 +90,10 @@ def get_histograms(data, means):
 	spinner = ['\\', '|', '/', '-']
 	spincount = 0
 	for i, item in enumerate(data): # (img, label, SIFT descriptors) triple
-	    hist = np.zeros((means.shape[1], 0))
+	    hist = np.zeros(means.shape[1])
 	    for desc in item[0]: # for each descriptor set each descriptor has 128 values)
-
-		status_string = "{} ({})".format(spinner[spincount % len(spinner)], i)
+		percent = int((float(i) / float(len(data))) * 100)
+		status_string = "{} ({}%)".format(spinner[spincount % len(spinner)], percent)
 		sys.stdout.write(status_string)
 		sys.stdout.flush()
 		sys.stdout.write('\b' * len(status_string))
@@ -102,8 +104,8 @@ def get_histograms(data, means):
 		dists = sorted(dists, key=lambda entry: entry[1])
 		hist[dists[0][0]] += 1
 		spincount += 1
-	    data_hists.append(hist)
-	np.save(hist_save_file, data_hists)
+	    data_hists.append(np.array(hist))
+	np.save(hist_save_file, np.asarray(data_hists))
     return data_hists
 
 
@@ -111,7 +113,7 @@ toolbar_width = 80
 kmeans = 100
 data_dir = "./../Training Data/"
 sift = cv2.SIFT()
-svm = cv2.SVM()
+# svm = cv2.SVM()
 save_file = 'sift_save.npy'
 data_save_file = 'data' + save_file
 means_save_file = 'means' + save_file
@@ -139,21 +141,38 @@ if len(means) == 0:
     means = get_buckets(data, tup=True, shuffle=True)
     np.save(means_save_file, means)
 
+labels = np.array([d[1] for d in data], dtype=np.float32)
+data_hists = np.array(get_histograms(data, means), dtype=np.float32)
+
+"""
 svm_params = dict(kernel_type = cv2.SVM_RBF,
-	    svm_type = cv2.SVM_C_SVC,
-	    C=1.0, gamma=0.1)
-
-
-labels = [d[1] for d in data]
-data_hists = get_histograms(data, means)
-
-for val_data, val_label, train_data, train_label in get_folds(data_hists, labels):
-    for x in train_data:
-	svm.train(train_data, train_label, params=svm_params)
-
+	svm_type = cv2.SVM_C_SVC,
+	C=c, gamma=gamma)
 """
-    hist = np.zeros(kmeans)
-    for i in classified_points:
-	hist[i[0]] += 1
-"""
+
+training_err = []
+val_err = []
+clf = svm.SVC(C=1000.0, kernel='rbf', gamma=0.0001, probability=False)
+
+for i in range(10):
+    for val_data, val_label, train_data, train_label in get_folds(data_hists, labels, shuffle=True):
+	#svm.train(train_data, train_label, params=svm_params)
+	clf.fit(train_data, train_label)
+	#train_result = svm.predict_all(train_data)
+	train_result = clf.predict(train_data)
+	# train_probs = clf.predict_proba(train_data)
+	# train_dec = clf.decision_function(train_data)
+	mask = (train_result.flatten() == train_label)
+	correct = np.count_nonzero(mask)
+	training_err.append(correct * 100.0 / train_result.size)
+
+	#val_result = svm.predict_all(val_data)
+	val_result = clf.predict(val_data)
+	mask = (val_result.flatten() == val_label)
+	correct = np.count_nonzero(mask)
+	val_err.append(correct * 100.0 / val_result.size)
+
+print "training error: {}".format(100.0 - np.mean(training_err))
+print "validation error: {}".format(100.0 - np.mean(val_err))
+
 
