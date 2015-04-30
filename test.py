@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-
 from skimage import data
 from skimage.filters import threshold_otsu, threshold_adaptive
 from skimage.io import imread

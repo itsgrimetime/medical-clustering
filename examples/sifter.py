@@ -3,22 +3,9 @@ import numpy as np
 import pdb
 import matplotlib.pyplot as plt
 import random
-import operator
 from sklearn import svm
-
 import pylab as pl
-
-from os import listdir
-from os.path import isdir
-
-import time
-import sys
-
-def get_descriptors(img, sift, gray=False):
-    if gray:
-	img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    kp, des = sift.detectAndCompute(img, None)
-    return des
+from detect import *
 
 def get_folds(data, labels, k=5, shuffle=False):
     if len(data) != len(labels):
@@ -39,110 +26,41 @@ def get_folds(data, labels, k=5, shuffle=False):
 	train_label = np.concatenate((labels[0 : chunk * fold_size], labels[(chunk + 1) * fold_size :]))
 	yield (val_data, val_label, train_data, train_label)
 
-# TODO get labels matricies too
-def get_filenames(directory):
-    classes = {}
-    count = 0
-    for d in (x for x in listdir(data_dir) if not x.startswith('.')):
-	classes[data_dir + d] = count
-	count += 1
-    print "{} classes".format(len(classes))
-    for fldr in (f for f in listdir(data_dir) if isdir(data_dir + f)):
-	for image_file in (f for f in listdir(data_dir + fldr) if f.split('.')[-1] == 'jpeg'):
-	    full_path = './' + data_dir + fldr + '/' + image_file
-	    # print full_path
-	    yield (full_path, classes[data_dir + fldr])
-
-def get_buckets(data, tup=False, pct=0.75, shuffle=False, kmeans=100):
-    if pct <= 0 or pct > 1.0:
-	print "Error: pct must be on interval (0, 1]"
-	return None
-    if kmeans < 2:
-	print "Error: kmeans must be grearter than 1"
-	return None
-    index = range(len(data))
-    if shuffle: random.shuffle(index)
-    desc = np.empty((0, 128), dtype=np.float32)
-    cut = int(round(len(data) * pct))
-    for i in index[:cut]:
-	if tup:
-	    desc = np.vstack((desc, data[i][0]))
-	else:
-	    desc = np.vstack((desc, data[i]))
-
-    temp, classified_points, means = cv2.kmeans(desc, K=kmeans, bestLabels=None,
-	    criteria=crit, attempts=1, flags=cv2.KMEANS_RANDOM_CENTERS)
-    return means
-
-def load_data(filename):
-    try:
-	data = np.load(filename)
-	print "Loaded {} items from {}".format(len(data), filename)
-    except IOError:
-	print "Unable to load data from {}".format(filename)
-	data = []
-    return data
-
-def get_histograms(data, means):
-    data_hists = load_data(hist_save_file)
-    if len(data_hists) == 0:
-	print "Building histograms"
-	spinner = ['\\', '|', '/', '-']
-	spincount = 0
-	for i, item in enumerate(data): # (img, label, SIFT descriptors) triple
-	    hist = np.zeros(means.shape[1])
-	    for desc in item[0]: # for each descriptor set each descriptor has 128 values)
-		percent = int((float(i) / float(len(data))) * 100)
-		status_string = "{} ({}%)".format(spinner[spincount % len(spinner)], percent)
-		sys.stdout.write(status_string)
-		sys.stdout.flush()
-		sys.stdout.write('\b' * len(status_string))
-
-		dists = []
-		for mindex, mean in enumerate(means):
-		    dists.append((mindex, np.linalg.norm(mean - desc)))
-		dists = sorted(dists, key=lambda entry: entry[1])
-		hist[dists[0][0]] += 1
-		spincount += 1
-	    data_hists.append(np.array(hist))
-	np.save(hist_save_file, np.asarray(data_hists))
-    return data_hists
-
-
-toolbar_width = 80
-kmeans = 100
+kmeans = 200
 data_dir = "./../Training Data/"
+# selector = cv2.SIFT()
 sift = cv2.SIFT()
+# surf.extended = True
 # svm = cv2.SVM()
+# save_file = 'sift_save.npy'
 save_file = 'sift_save.npy'
 data_save_file = 'data' + save_file
 means_save_file = 'means' + save_file
 hist_save_file = 'hist' + save_file
 crit = (cv2.TERM_CRITERIA_EPS, 30, 0.1)
 
-# TODO you can refactor load_data to take a function to run when
-# the data can't be loaded. Same with means down there
-data = load_data(data_save_file)
-if len(data) == 0:
-    for filename, label in get_filenames(data_dir):
-	print "filename: {}, label: {}".format(filename, label)
-	img = cv2.imread(filename)
-	data.append((get_descriptors(img, sift), label))
-    print "Saving {} descriptors to {}".format(len(data), data_save_file)
-    np.save(data_save_file, data)
+ppc = (10, 10)
+cpb = (3, 3)
 
-# temp, classified_points, means = cv2.kmeans(np.asarray(all_descriptors), K=2, bestLabels=None, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER, 1, kmeans), attempts=1, flags=cv2.KMEANS_RANDOM_CENTERS)
-# def get_buckets(data, tup=False, pct=0.75, shuffle=False, kmeans=100):
-# get our defining "bucket of words"
+test_labels = []
+for line in open('../test_labels.txt'):
+    test_labels.append([int(i.strip()) for i in line.split(',')])
+
+test_data = get_image_data('./../Test Data/', selector='sift', inst=sift, **{'load': True, 'save': True, 'scalex': 0.25, 'scaley': 0.25, 'save_file': 'testsift.npy', 'load_file': 'testsift.npy'})
+
+
+data = get_image_data(data_dir, selector='sift', inst=sift, **{'scalex': 0.25, 'scaley': 0.25, 'load': True, 'save': True})
 
 means = load_data(means_save_file)
 if len(means) == 0:
     print "Calculating bucket of words"
-    means = get_buckets(data, tup=True, shuffle=True)
+    means = get_buckets(data, tup=True, shuffle=True, kmeans=200)
     np.save(means_save_file, means)
 
 labels = np.array([d[1] for d in data], dtype=np.float32)
-data_hists = np.array(get_histograms(data, means), dtype=np.float32)
+
+data = np.array(get_histograms(data, means), dtype=np.float32)
+test_data = np.array(get_histograms(test_data, means, load_file='test_hist_save.npy', save_file='test_hist_save.npy'), dtype=np.float32)
 
 """
 svm_params = dict(kernel_type = cv2.SVM_RBF,
@@ -152,27 +70,42 @@ svm_params = dict(kernel_type = cv2.SVM_RBF,
 
 training_err = []
 val_err = []
-clf = svm.SVC(C=1000.0, kernel='rbf', gamma=0.0001, probability=False)
+test_err = []
+# clf = svm.SVC(kernel='linear', probability=True)
+clf = svm.SVC(C=1000.0, kernel='rbf', gamma=0.0001, probability=True)
+# clf = svm.LinearSVC()
 
+# data = np.array([np.asarray(d[0]) for d in data], dtype=np.float32)
+# test_data = np.array([np.asarray(d[0]) for d in test_data], dtype=np.float32)
+
+spinner = Spinner();
+print "Beginning Training of SVM and classifying"
 for i in range(10):
-    for val_data, val_label, train_data, train_label in get_folds(data_hists, labels, shuffle=True):
+    for val_data, val_label, train_data, train_label in get_folds(data, labels, shuffle=True):
+	spinner.spin(shownum=False)
 	#svm.train(train_data, train_label, params=svm_params)
 	clf.fit(train_data, train_label)
 	#train_result = svm.predict_all(train_data)
 	train_result = clf.predict(train_data)
-	# train_probs = clf.predict_proba(train_data)
 	# train_dec = clf.decision_function(train_data)
 	mask = (train_result.flatten() == train_label)
 	correct = np.count_nonzero(mask)
 	training_err.append(correct * 100.0 / train_result.size)
+	test_result = clf.predict(test_data)
+	test_probs = clf.predict_proba(test_data)
 
+	test_correct = 0.0
+	for l, probs in enumerate(test_probs):
+	    for class_guess in [i for i, prob, in enumerate(probs) if prob >= 0.25]:
+		if class_guess in test_labels[l]:
+		    test_correct += 1.0 / len(test_labels[l])
+
+	test_err.append(test_correct * 100.0 / len(test_labels))
 	#val_result = svm.predict_all(val_data)
 	val_result = clf.predict(val_data)
 	mask = (val_result.flatten() == val_label)
 	correct = np.count_nonzero(mask)
 	val_err.append(correct * 100.0 / val_result.size)
-
 print "training error: {}".format(100.0 - np.mean(training_err))
 print "validation error: {}".format(100.0 - np.mean(val_err))
-
-
+print "testing error: {}".format(100.0 - np.mean(test_err))
